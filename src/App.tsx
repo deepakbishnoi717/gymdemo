@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef } from "react";
 import { 
   Menu, X, ShoppingBag, Send, ChevronLeft, ChevronRight, 
-  Plus, Minus, Dumbbell, Sparkles, MessageSquare, CheckCircle, 
+  Plus, Minus, Dumbbell, Sparkles, CheckCircle, 
   Instagram, Facebook, Award, Target, Zap, Clock, User, 
   Sun, Moon, Trash2, ArrowUpRight, Shield, HeartPulse, ShieldAlert
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import { Product, CartItem, Message, CarouselItem } from "./types";
-import { PRODUCTS, CAROUSEL_EQ, MOCK_TRAINER_SUGGESTIONS } from "./data";
+import { Product, CartItem, CarouselItem } from "./types";
+import { PRODUCTS, CAROUSEL_EQ } from "./data";
 
 // ==========================================
 // CUSTOM PREMIUM KINETIC THEMED COMPONENTS
@@ -303,18 +303,6 @@ export default function App() {
   // 3D Equipment Carousel Active index
   const [eqIndex, setEqIndex] = useState(0);
 
-  // AI Trainer Chatbot State
-  const [chatMessages, setChatMessages] = useState<Message[]>([
-    {
-      id: "init-msg",
-      sender: "trainer",
-      text: "RECRUIT. Welcome to the ELITE IRON training chamber. I'm your 24/7 AI Coach. State your ultimate fitness target and we'll engineer a customized path to destroy it. Let's lift.",
-      timestamp: new Date()
-    }
-  ]);
-  const [inputMessage, setInputMessage] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
-
   // Enquiry Fields State
   const [enquiryName, setEnquiryName] = useState("");
   const [enquiryGoal, setEnquiryGoal] = useState("Hypertrophy");
@@ -329,18 +317,10 @@ export default function App() {
   const [mouseOffset, setMouseOffset] = useState({ x: 0, y: 0 });
   const heroRef = useRef<HTMLDivElement>(null);
 
-  // Chat window bottom ref to autoscroll
-  const chatEndRef = useRef<HTMLDivElement>(null);
-
   // Theme Persistence
   useEffect(() => {
     localStorage.setItem("elite_iron_theme", theme);
   }, [theme]);
-
-  // Autoscroll to bottom on new chatbot messages
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [chatMessages, isTyping]);
 
   // Handle Hero Mouse Move 3D Perspective Rotation
   const handleHeroMouseMove = (e: React.MouseEvent) => {
@@ -371,6 +351,13 @@ export default function App() {
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
     }, 4500);
+  };
+
+  // Select program and scroll down to enquiry form
+  const selectProgramAndScroll = (goalName: string) => {
+    setEnquiryGoal(goalName);
+    const el = document.getElementById("enquiry");
+    el?.scrollIntoView({ behavior: "smooth" });
   };
 
   // Shopping Cart Actions
@@ -416,60 +403,6 @@ export default function App() {
   );
 
   const cartTotalItems = cartItems.reduce((acc, curr) => acc + curr.quantity, 0);
-
-  // Send message to AI Trainer Server-Side Gemini endpoint
-  const sendChatMessage = async (textToSend: string) => {
-    if (!textToSend.trim()) return;
-
-    const userMsg: Message = {
-      id: Math.random().toString(),
-      sender: "user",
-      text: textToSend,
-      timestamp: new Date()
-    };
-
-    setChatMessages((prev) => [...prev, userMsg]);
-    setInputMessage("");
-    setIsTyping(true);
-
-    try {
-      // Build previous messages context to keep continuity
-      const chatHistory = chatMessages.map((m) => ({
-        sender: m.sender,
-        text: m.text
-      }));
-
-      const res = await fetch("/api/ai-trainer", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: textToSend, chatHistory })
-      });
-
-      if (!res.ok) {
-        throw new Error("Failed to communicate with trainer.");
-      }
-
-      const data = await res.json();
-      const trainerMsg: Message = {
-        id: Math.random().toString(),
-        sender: "trainer",
-        text: data.text,
-        timestamp: new Date()
-      };
-      setChatMessages((prev) => [...prev, trainerMsg]);
-    } catch (err) {
-      console.error(err);
-      const errorMsg: Message = {
-        id: Math.random().toString(),
-        sender: "trainer",
-        text: "My telemetry connection fluctuated slightly, but don't lose focus! Keep pushing weights. Re-submit your command and let's get back on program.",
-        timestamp: new Date()
-      };
-      setChatMessages((prev) => [...prev, errorMsg]);
-    } finally {
-      setIsTyping(false);
-    }
-  };
 
   // Submit Enquiry Callback
   const handleEnquirySubmit = async (e: React.FormEvent) => {
@@ -587,7 +520,7 @@ export default function App() {
           {/* Desktop Links */}
           <div className="hidden md:flex items-center gap-8 font-mono text-sm uppercase tracking-widest text-zinc-400">
             <a href="#" className="text-white hover:text-lime-neon transition-colors">Home</a>
-            <a href="#training" className="hover:text-lime-neon transition-colors">AI Trainer</a>
+            <a href="#programs" className="hover:text-lime-neon transition-colors">Programs</a>
             <a href="#carousel" className="hover:text-lime-neon transition-colors">Machinery</a>
             <a href="#shop" className="hover:text-lime-neon transition-colors">Lite Shop</a>
             <a href="#enquiry" className="hover:text-lime-neon transition-colors">Enquire</a>
@@ -650,11 +583,11 @@ export default function App() {
                 Home
               </a>
               <a 
-                href="#training" 
+                href="#programs" 
                 onClick={() => setMobileMenuOpen(false)}
                 className="text-zinc-400 hover:text-lime-neon"
               >
-                AI Trainer
+                Programs
               </a>
               <a 
                 href="#carousel" 
@@ -742,12 +675,12 @@ export default function App() {
                 </MagneticButton>
                 <MagneticButton 
                   onClick={() => {
-                    const el = document.getElementById("training");
+                    const el = document.getElementById("programs");
                     el?.scrollIntoView({ behavior: "smooth" });
                   }} 
                   className="px-8 py-4 bg-transparent text-white border border-zinc-700 font-bold uppercase text-xs rounded-sm hover:border-lime-neon hover:text-lime-neon transition-colors duration-300 flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  <MessageSquare className="w-5 h-5" /> ASSISTING AI
+                  <Award className="w-5 h-5" /> ELITE PROGRAMS
                 </MagneticButton>
               </div>
 
@@ -855,17 +788,17 @@ export default function App() {
         </section>
 
         {/* ======================================= */}
-        {/* SECTION: 24/7 AI TRAINER CHAT ENGINE */}
+        {/* SECTION: ELITE EVOLUTION PROGRAMS */}
         {/* ======================================= */}
         <section 
-          id="training"
+          id="programs"
           className="py-16 md:py-24 relative overflow-visible"
         >
           {/* Section revealed zoom in effect */}
           <motion.div
-            initial={{ scale: 0.95, opacity: 0 }}
+            initial={{ scale: 0.9, opacity: 0 }}
             whileInView={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.8 }}
+            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
             viewport={{ once: true, margin: "-100px" }}
             className="w-full relative"
           >
@@ -873,152 +806,135 @@ export default function App() {
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-[#ccff00]/5 rounded-full blur-[120px] pointer-events-none" />
 
             <div className="text-center max-w-3xl mx-auto mb-16 relative z-10">
-              <span className="font-mono text-xs text-lime-neon font-black tracking-[0.25em] uppercase">ULTRA-INTEGRATED CYBER-COACH MODULE</span>
-              <h2 className="text-4xl md:text-5xl font-black tracking-tight mt-2 italic uppercase text-white">
-                THE 24/7 <span className="text-lime-neon glow-text-neon animate-pulse-neon">AI COGNITIVE</span> CHAMBER
+              <span className="font-mono text-xs text-lime-neon font-black tracking-[0.25em] uppercase">ULTRA-PERFORMANCE MATRIX</span>
+              <h2 className="text-4xl md:text-5xl font-black tracking-tight mt-2 italic uppercase text-white font-sans">
+                ELITE <span className="text-lime-neon glow-text-neon animate-pulse-neon">EVOLUTION</span> PROGRAMS
               </h2>
               <div className="w-16 h-1.5 bg-lime-neon mx-auto mt-4 rounded" />
-              <p className="text-zinc-400 font-light mt-4 leading-relaxed">
-                Elite physical modifications demand precise instructions. Our advanced cybernetic coaching terminal utilizes the powerful Gemini 3.5 context arrays to compile customized hyperfine split plans, metabolic macros, and high-intensity adaptation cycles in real-time.
+              <p className="text-zinc-400 font-light mt-4 leading-relaxed font-sans">
+                Achieving elite athletic transformation requires targeted physiological adaptation profiles. Select a program vector below to configure your anatomical goals.
               </p>
             </div>
 
-            {/* Interactive Grid: Prompt suggestions & chat viewport */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch max-w-5xl mx-auto">
-              
-               {/* Sidebar/Context board */}
-              <div className="lg:col-span-4 flex flex-col gap-6 justify-between">
-                
-                {/* AI Trainer Profile Card */}
-                {/* AI Trainer Profile Card: Holograph glass block */}
-                <div className="glass p-6 rounded-xl border border-lime-neon/35 hover:shadow-[0_0_25px_rgba(204,255,0,0.15)] relative overflow-hidden transition-all duration-500">
-                  {/* Glowing hologram scanning line effect */}
-                  <div className="scan-line" />
-
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="w-14 h-14 rounded-sm bg-lime-neon/20 border border-lime-neon flex items-center justify-center text-lime-neon shrink-0 relative">
-                      <Sparkles className="w-7 h-7 animate-pulse text-lime-neon" />
-                      <span className="absolute bottom-[-1.5px] right-[-1.5px] w-3.5 h-3.5 bg-emerald-500 border-2 border-black rounded-full animate-ping" />
-                      <span className="absolute bottom-[-1.5px] right-[-1.5px] w-3.5 h-3.5 bg-emerald-500 border-2 border-black rounded-full" />
-                    </div>
-                    <div>
-                      <span className="font-mono text-[9px] tracking-widest text-[#ccff00] uppercase font-bold block">COACH-NODE v3.5</span>
-                      <h4 className="font-black text-base tracking-tight text-white leading-tight">CHIEF ATTACHE</h4>
-                      <p className="text-xs text-emerald-450 animate-pulse font-mono font-bold">STATUS: STREAMING</p>
-                    </div>
+            {/* 3-Column Glassmorphism Program Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto relative z-10">
+              {/* Program 1: Neuro-Hypertrophy */}
+              <div className="glass rounded-2xl border border-white/10 hover:border-lime-neon/50 p-6 flex flex-col justify-between transition-all duration-500 hover:shadow-[0_0_30px_rgba(204,255,0,0.15)] group relative overflow-hidden font-sans">
+                <div className="scan-line opacity-10 group-hover:opacity-30" />
+                <div>
+                  <div className="flex justify-between items-center mb-4">
+                    <span className="bg-lime-neon/10 border border-lime-neon/20 text-lime-neon px-2.5 py-0.5 rounded-sm font-mono text-[9px] font-bold tracking-widest uppercase">
+                      STRENGTH MODIFICATIONS
+                    </span>
+                    <Dumbbell className="w-6 h-6 text-lime-neon animate-pulse" />
                   </div>
-                  
-                  <p className="text-xs text-zinc-400 leading-relaxed font-light font-sans">
-                    Direct access to raw AI fitness schemas. State hypertrophy targets, custom program layouts, or scheduling profiles below.
+                  <h3 className="text-xl font-extrabold text-white uppercase italic tracking-tight mb-3">
+                    NEURO-HYPERTROPHY SPEC
+                  </h3>
+                  <p className="text-xs text-zinc-450 leading-relaxed mb-6">
+                    Designed to trigger maximum myofibrillar expansion using optimized tension curves, hyper-volume sets, and precision mechanical failure protocols.
                   </p>
-
-                  <div className="mt-5 pt-4 border-t border-zinc-900/50 flex flex-col gap-2">
-                    <div className="flex items-center justify-between text-xs font-mono">
-                      <span className="text-zinc-[400] uppercase tracking-widest text-[9px]">RESPONSE RATE:</span>
-                      <span className="text-lime-neon font-black">~0.7s COGNITION</span>
+                  <div className="space-y-2 mb-8 text-left">
+                    <div className="flex items-center gap-2 text-[11px] text-zinc-300 font-mono">
+                      <span className="w-1.5 h-1.5 bg-lime-neon rounded-full" />
+                      <span>5-Day Hypertrophy Split</span>
                     </div>
-                    <div className="flex items-center justify-between text-xs font-mono">
-                      <span className="text-zinc-[400] uppercase tracking-widest text-[9px]">DIALECTIC MODEL:</span>
-                      <span className="text-lime-neon font-black">GEMINI 3.5 ENGINE</span>
+                    <div className="flex items-center gap-2 text-[11px] text-zinc-300 font-mono">
+                      <span className="w-1.5 h-1.5 bg-lime-neon rounded-full" />
+                      <span>Intra-Set Recovery Ratios</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-[11px] text-zinc-300 font-mono">
+                      <span className="w-1.5 h-1.5 bg-lime-neon rounded-full" />
+                      <span>Myofibrillar Expansion Focus</span>
                     </div>
                   </div>
                 </div>
-
-                {/* Trainer Suggestion Chips */}
-                <div className="flex flex-col gap-3">
-                  <h5 className="font-mono text-xs font-black text-zinc-400 uppercase tracking-widest px-1">TRAINER PROMPT QUICK CHIPS</h5>
-                  <div className="flex flex-wrap lg:flex-col gap-2">
-                    {MOCK_TRAINER_SUGGESTIONS.map((suggestion, idx) => (
-                      <MagneticButton
-                        key={idx}
-                        onClick={() => sendChatMessage(suggestion)}
-                        className="text-left text-xs bg-zinc-900/85 hover:bg-lime-neon hover:text-black border border-zinc-800 hover:border-lime-neon text-zinc-350 hover:text-black font-mono py-2 px-3 rounded-sm transition-all duration-300 flex items-center justify-between group cursor-pointer w-full"
-                      >
-                        <span className="line-clamp-1">{suggestion}</span>
-                        <ArrowUpRight className="w-3.5 h-3.5 opacity-40 group-hover:opacity-100 group-hover:text-black transition-opacity ml-1.5 shrink-0" />
-                      </MagneticButton>
-                    ))}
-                  </div>
-                </div>
-
+                <button
+                  onClick={() => selectProgramAndScroll("Hypertrophy")}
+                  className="w-full py-3 bg-zinc-950 border border-[#ccff00]/40 text-[#ccff00] font-mono text-[10px] tracking-wider uppercase font-extrabold hover:bg-[#ccff00] hover:text-black transition-all cursor-pointer rounded-sm"
+                >
+                  RESERVE PROTOCOL
+                </button>
               </div>
 
-              {/* Chat Viewport Card */}
-              <div className="lg:col-span-8 glass pb-6 rounded-xl border border-white/10 flex flex-col overflow-hidden min-h-[480px] relative">
-                {/* Glowing hologram scanning line effect */}
-                <div className="scan-line" />
-                <div className="absolute inset-x-0 top-0 h-full bg-[linear-gradient(rgba(204,255,0,0.015)_1px,transparent_1px)] bg-[size:100%_4px] pointer-events-none opacity-40 z-0" />
-                
-                {/* Chat Header */}
-                <div className="px-6 py-4 bg-zinc-950 border-b border-zinc-900 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-3.5 h-3.5 rounded-full bg-lime-neon animate-pulse" />
-                    <span className="font-mono text-xs font-bold uppercase tracking-widest text-[#ccff00]">SECURE COACH SEC_CHAMBER_01</span>
+              {/* Program 2: Metabolic Adipose Shred */}
+              <div className="glass rounded-2xl border border-white/10 hover:border-lime-neon/50 p-6 flex flex-col justify-between transition-all duration-500 hover:shadow-[0_0_30px_rgba(204,255,0,0.15)] group relative overflow-hidden font-sans">
+                <div className="scan-line opacity-10 group-hover:opacity-30" />
+                <div>
+                  <div className="flex justify-between items-center mb-4">
+                    <span className="bg-lime-neon/10 border border-lime-neon/20 text-lime-neon px-2.5 py-0.5 rounded-sm font-mono text-[9px] font-bold tracking-widest uppercase">
+                      ENERGY CONDITIONING
+                    </span>
+                    <HeartPulse className="w-6 h-6 text-lime-neon animate-pulse" />
                   </div>
-                  <span className="text-[10px] font-mono text-zinc-500">USER: {localStorage.getItem("elite_iron_user") ? "ACTIVE" : "GUEST"}</span>
-                </div>
-
-                {/* Messages Feed */}
-                <div className="flex-1 p-6 overflow-y-auto max-h-[350px] flex flex-col gap-4">
-                  {chatMessages.map((msg) => (
-                    <div 
-                      key={msg.id}
-                      className={`flex flex-col max-w-[85%] ${
-                        msg.sender === "user" ? "self-end items-end" : "self-start items-start"
-                      }`}
-                    >
-                      <div className={`p-4 rounded-2xl text-sm leading-relaxed ${
-                        msg.sender === "user" 
-                          ? "bg-lime-neon text-black font-medium" 
-                          : "bg-zinc-900 text-white border border-zinc-800 font-light"
-                      }`}>
-                        {msg.text}
-                      </div>
-                      <span className="text-[9px] font-mono text-zinc-500 mt-1 uppercase">
-                        {msg.sender === "user" ? "CRITICAL USER" : "ELITE TRAINER"} • {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </span>
+                  <h3 className="text-xl font-extrabold text-white uppercase italic tracking-tight mb-3">
+                    METABOLIC ADIPOSE SHRED
+                  </h3>
+                  <p className="text-xs text-zinc-450 leading-relaxed mb-6">
+                    Neuro-metabolic conditioning designed to maximize calorie dissipation, increase oxygen uptake metrics, and shred excess fat while retaining lean mass.
+                  </p>
+                  <div className="space-y-2 mb-8 text-left">
+                    <div className="flex items-center gap-2 text-[11px] text-zinc-300 font-mono">
+                      <span className="w-1.5 h-1.5 bg-lime-neon rounded-full" />
+                      <span>High-Intensity Lactate Threshold</span>
                     </div>
-                  ))}
-
-                  {/* Typing State Indicator */}
-                  {isTyping && (
-                    <div className="self-start items-start max-w-[80%] flex flex-col">
-                      <div className="p-4 rounded-2xl bg-zinc-900 border border-zinc-800 text-white text-sm font-mono flex items-center gap-2">
-                        <span className="text-[11px] uppercase tracking-widest text-lime-neon font-black animate-pulse">COACH SYNTHESIZING RESPONSE</span>
-                        <span className="flex gap-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-lime-neon animate-bounce" style={{ animationDelay: "0s" }} />
-                          <span className="w-1.5 h-1.5 rounded-full bg-lime-neon animate-bounce" style={{ animationDelay: "0.15s" }} />
-                          <span className="w-1.5 h-1.5 rounded-full bg-lime-neon animate-bounce" style={{ animationDelay: "0.3s" }} />
-                        </span>
-                      </div>
+                    <div className="flex items-center gap-2 text-[11px] text-zinc-300 font-mono">
+                      <span className="w-1.5 h-1.5 bg-lime-neon rounded-full" />
+                      <span>EPOC Density Circuits</span>
                     </div>
-                  )}
-
-                  <div ref={chatEndRef} />
-                </div>
-
-                {/* Input Tray */}
-                <div className="px-6 pt-4 border-t border-zinc-900 bg-zinc-950/80">
-                  <div className="flex gap-2.5">
-                    <input
-                      type="text"
-                      className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3.5 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-lime-neon/60 focus:ring-1 focus:ring-lime-neon/40 transition-colors"
-                      placeholder="Input fitness targets (e.g., Build severe leg mass)..."
-                      value={inputMessage}
-                      onChange={(e) => setInputMessage(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && sendChatMessage(inputMessage)}
-                    />
-                    <button
-                      onClick={() => sendChatMessage(inputMessage)}
-                      disabled={!inputMessage.trim()}
-                      className="px-5 rounded-xl bg-lime-neon text-black font-extrabold hover:bg-neutral-100 disabled:opacity-40 disabled:hover:bg-lime-neon transition-all flex items-center justify-center shrink-0"
-                    >
-                      <Send className="w-5 h-5" />
-                    </button>
+                    <div className="flex items-center gap-2 text-[11px] text-zinc-300 font-mono">
+                      <span className="w-1.5 h-1.5 bg-lime-neon rounded-full" />
+                      <span>Fat Oxidation Protocols</span>
+                    </div>
                   </div>
                 </div>
-
+                <button
+                  onClick={() => selectProgramAndScroll("Fat Loss")}
+                  className="w-full py-3 bg-zinc-950 border border-[#ccff00]/40 text-[#ccff00] font-mono text-[10px] tracking-wider uppercase font-extrabold hover:bg-[#ccff00] hover:text-black transition-all cursor-pointer rounded-sm"
+                >
+                  RESERVE PROTOCOL
+                </button>
               </div>
+
+              {/* Program 3: Neurological Force Capacity */}
+              <div className="glass rounded-2xl border border-white/10 hover:border-lime-neon/50 p-6 flex flex-col justify-between transition-all duration-500 hover:shadow-[0_0_30px_rgba(204,255,0,0.15)] group relative overflow-hidden font-sans">
+                <div className="scan-line opacity-10 group-hover:opacity-30" />
+                <div>
+                  <div className="flex justify-between items-center mb-4">
+                    <span className="bg-lime-neon/10 border border-lime-neon/20 text-lime-neon px-2.5 py-0.5 rounded-sm font-mono text-[9px] font-bold tracking-widest uppercase">
+                      POWER ACQUISITION
+                    </span>
+                    <Shield className="w-6 h-6 text-lime-neon animate-pulse" />
+                  </div>
+                  <h3 className="text-xl font-extrabold text-white uppercase italic tracking-tight mb-3">
+                    NEUROLOGICAL FORCE CAPACITY
+                  </h3>
+                  <p className="text-xs text-zinc-450 leading-relaxed mb-6">
+                    Optimize central nervous system recruitment and motor unit synchrony. Tailored for raw powerlifting, squats, presses, and maximal neurological force output.
+                  </p>
+                  <div className="space-y-2 mb-8 text-left">
+                    <div className="flex items-center gap-2 text-[11px] text-zinc-300 font-mono">
+                      <span className="w-1.5 h-1.5 bg-lime-neon rounded-full" />
+                      <span>1-Rep Max Peak Programming</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-[11px] text-zinc-300 font-mono">
+                      <span className="w-1.5 h-1.5 bg-lime-neon rounded-full" />
+                      <span>CNS Decompression Splits</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-[11px] text-zinc-300 font-mono">
+                      <span className="w-1.5 h-1.5 bg-lime-neon rounded-full" />
+                      <span>Kinetic Velocity Diagnostics</span>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => selectProgramAndScroll("Powerlifting")}
+                  className="w-full py-3 bg-zinc-950 border border-[#ccff00]/40 text-[#ccff00] font-mono text-[10px] tracking-wider uppercase font-extrabold hover:bg-[#ccff00] hover:text-black transition-all cursor-pointer rounded-sm"
+                >
+                  RESERVE PROTOCOL
+                </button>
+              </div>
+
             </div>
 
           </motion.div>
@@ -1180,72 +1096,12 @@ export default function App() {
             {/* Shopping 3-column Grid layout */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
               {PRODUCTS.map((prod) => (
-                <div 
+                <ProductFlipCard
                   key={prod.id}
-                  className="glass rounded-2xl flex flex-col justify-between overflow-hidden border border-white/10 transition-all duration-300 h-full relative group"
-                >
-                  
-                  {/* Category Banner overlay */}
-                  <div className="absolute top-4 left-4 bg-black/80 backdrop-blur-md px-2.5 py-1 rounded-sm font-mono text-[9px] text-[#ccff00] font-bold z-10">
-                    {prod.category}
-                  </div>
-
-                  {/* Thumbnail */}
-                  <div className="h-64 relative bg-[#090b0d] overflow-hidden">
-                    <img 
-                      src={prod.image} 
-                      alt={prod.name}
-                      referrerPolicy="no-referrer"
-                      className="w-full h-full object-cover mix-blend-luminosity hover:mix-blend-normal hover:scale-105 transition-all duration-700"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 to-transparent" />
-                  </div>
-
-                  {/* Body Copy info */}
-                  <div className="p-6 flex-1 flex flex-col justify-between">
-                    <div>
-                      <div className="flex justify-between items-start mb-2">
-                        <h4 className="font-black text-lg text-white leading-tight uppercase tracking-tight italic">
-                          {prod.name}
-                        </h4>
-                        <span className="font-mono font-black text-lg text-lime-neon shrink-0">
-                          ${prod.price}
-                        </span>
-                      </div>
-                      
-                      <p className="text-xs text-zinc-400 mt-2 font-light leading-relaxed">
-                        {prod.description}
-                      </p>
-
-                      {/* Spec indicators */}
-                      <div className="mt-4 flex flex-wrap gap-1.5">
-                        {prod.specs.map((item, i) => (
-                          <span key={i} className="bg-zinc-905 border border-zinc-900 text-[9px] font-mono tracking-wide px-2 py-0.5 rounded-sm text-white flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 bg-lime-neon rounded-full" /> {item}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Integrated CTA buttons */}
-                    <div className="mt-6 pt-6 border-t border-zinc-900/50 grid grid-cols-2 gap-3">
-                      <button
-                        onClick={() => addToCart(prod)}
-                        className="px-3.5 py-3 rounded-sm border border-[#ccff00]/40 text-[#ccff00] font-mono text-[10px] tracking-wider uppercase font-black hover:bg-[#ccff00] hover:text-black hover:border-[#ccff00] transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                      >
-                        <ShoppingBag className="w-3.5 h-3.5" /> ADD CART
-                      </button>
-                      <button
-                        onClick={triggerToast}
-                        className="px-3.5 py-3 rounded-sm bg-lime-neon text-black font-mono text-[10px] tracking-widest uppercase font-black hover:bg-white hover:text-black transition-all flex items-center justify-center neon-bg"
-                      >
-                        BUY NOW
-                      </button>
-                    </div>
-
-                  </div>
-
-                </div>
+                  product={prod}
+                  onAddToCart={addToCart}
+                  onBuyNow={triggerToast}
+                />
               ))}
             </div>
 
@@ -1551,7 +1407,7 @@ export default function App() {
             <h4 className="font-mono text-xs font-black text-white tracking-[0.2em] uppercase mb-4">MAP ARRAYS</h4>
             <div className="flex flex-col gap-3 font-mono text-xs uppercase tracking-wider">
               <a href="#" className="hover:text-lime-neon transition-colors">Home Landing</a>
-              <a href="#training" className="hover:text-lime-neon transition-colors">AI Coaching Space</a>
+              <a href="#programs" className="hover:text-lime-neon transition-colors">Elite Programs</a>
               <a href="#carousel" className="hover:text-lime-neon transition-colors">Machinery Specs</a>
               <a href="#shop" className="hover:text-lime-neon transition-colors">Biosupport Store</a>
               <a href="#enquiry" className="hover:text-lime-neon transition-colors">Access Registry</a>
