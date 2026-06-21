@@ -1,0 +1,6 @@
+{
+  "name": "ELITE IRON",
+  "description": "An ultra-premium, high-end 3D landing page for a modern gym called ELITE IRON with high-end animations and interactive AI trainer.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
